@@ -68,32 +68,25 @@ def parsePost(post, results):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--keyword', type=str, help='keyword to search')
     parser.add_argument('--subreddit', type=str, help='optional subreddit restriction')
     parser.add_argument('--date', type=str, help='optional date restriction (day, week, month or year)')
     args = parser.parse_args()
-    if args.keyword == None:
-        print('WARNING: No search keyword specified.')
-        args.keyword = ''
+	    
     if args.subreddit == None:
-        searchUrl = SITE_URL + 'search?q="' + args.keyword + '"'
-    else:
-        searchUrl = SITE_URL + 'r/' + args.subreddit + '/search?q="' + args.keyword + '"&restrict_sr=on'
+        print('Please specify subreddit with flag --subreddit "x". Exiting.')
+        sys.exit()
+    else:    
+        searchUrl = SITE_URL + 'r/' + args.subreddit
+
     if args.date == 'day' or args.date == 'week' or args.date == 'month' or args.date == 'year':
         searchUrl += '&t=' + args.date
     elif args.date != None:
         print('WARNING: Invalid date restriction parameter. Proceeding without any restrictions.')
-    try:
-        product = json.load(open('product.json'))
-    except FileNotFoundError:
-        print('WARNING: Database file not found. Creating a new one...')
-        product = {}
+        
     print('Search URL:', searchUrl)
     posts = getSearchResults(searchUrl)
     print('Started scraping', len(posts), 'posts.')
-    keyword = args.keyword.replace(' ', '-')
-    product[keyword] = {}
-    product[keyword]['subreddit'] = 'all' if args.subreddit == None else args.subreddit
+    
     results = Manager().list()
     jobs = []
     for post in posts:
@@ -102,6 +95,3 @@ if __name__ == '__main__':
         job.start()
     for job in jobs:
         job.join()
-    product[keyword]['posts'] = list(results)
-    with open('product.json', 'w', encoding='utf-8') as f:
-        json.dump(product, f, indent=4, ensure_ascii=False)
